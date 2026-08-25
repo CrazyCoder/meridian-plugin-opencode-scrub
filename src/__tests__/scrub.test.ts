@@ -80,10 +80,12 @@ describe("scrubOpencodeFingerprints — OMO 4.x Sisyphus (issue #1 drift)", () =
   })
 })
 
-describe("scrubOpencodeFingerprints — duplicate <env> block (metering trigger)", () => {
-  // opencode's environment() output: powered-by line + the full <env> block
-  // whose fields duplicate the Claude Code preset's own env. This is the
-  // signal Anthropic meters as Extra Usage (CrazyCoder bisected 2026-04-21).
+describe("scrubOpencodeFingerprints — duplicate env preamble (metering trigger)", () => {
+  // opencode's environment() output: powered-by line, the preamble Claude
+  // Code's preset already emits, and the <env> block. The repeated preamble
+  // is the signal Anthropic meters as Extra Usage (CrazyCoder bisected
+  // 2026-04-21). The block itself is the agent's only statement of where it
+  // is running, so it stays.
   const ENV_APPEND = `You are powered by the model named claude-haiku-4-5. The exact model ID is anthropic/claude-haiku-4-5
 Here is some useful information about the environment you are running in:
 <env>
@@ -94,19 +96,30 @@ Here is some useful information about the environment you are running in:
   Today's date: Thu Jul 10 2026
 </env>`
 
-  test("strips the env block and preamble when it ends the string (no trailing newline)", () => {
+  test("strips the preamble when it ends the string (no trailing newline)", () => {
     const out = scrubOpencodeFingerprints(ENV_APPEND)
-    expect(out).not.toContain("<env>")
     expect(out).not.toContain("useful information about the environment")
     expect(out).not.toContain("You are powered by the model named")
+    expect(out).toContain("<env>")
   })
 
-  test("strips the env block when content follows it (trailing newline present)", () => {
+  test("strips the preamble when content follows it (trailing newline present)", () => {
     const withTail = ENV_APPEND + "\n\nProject guidance: prefer TypeScript.\n"
     const out = scrubOpencodeFingerprints(withTail)
-    expect(out).not.toContain("<env>")
     expect(out).not.toContain("useful information about the environment")
+    expect(out).toContain("<env>")
     expect(out).toContain("Project guidance: prefer TypeScript.")
+  })
+
+  test("keeps every environment fact the agent needs", () => {
+    // The reason the block survives. A proxied model has no other source for
+    // its working directory, so scrubbing these leaves it guessing.
+    const out = scrubOpencodeFingerprints(ENV_APPEND)
+    expect(out).toContain("Working directory: /tmp")
+    expect(out).toContain("Workspace root folder: /tmp")
+    expect(out).toContain("Is directory a git repo: no")
+    expect(out).toContain("Platform: darwin")
+    expect(out).toContain("Today's date: Thu Jul 10 2026")
   })
 
   test("is idempotent on the env append", () => {

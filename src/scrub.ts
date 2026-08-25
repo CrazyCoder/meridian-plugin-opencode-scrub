@@ -83,15 +83,22 @@ const POWERED_BY_LINE =
   /You are powered by the model named [^\n]+\n/
 
 /**
- * Opencode-injected environment block + its preamble. The preamble string
- * is the EXACT one Claude Code's preset uses — when opencode appends its
- * own copy on top of the preset, the preamble appears twice in the final
- * system prompt and Anthropic gates opus behind Extra Usage. Bisected
- * 2026-04-21: removing this block (or just the preamble line) makes opus
- * succeed; sonnet/haiku unaffected.
+ * The duplicated preamble line only, not the block it introduces.
+ *
+ * The preamble string is the EXACT one Claude Code's preset uses. When
+ * opencode appends its own copy on top of the preset the preamble appears
+ * twice in the final system prompt, and Anthropic's billing layer treats the
+ * repetition as a third-party-impersonation signal, gating opus behind Extra
+ * Usage. Bisected 2026-04-21: dropping the preamble line is what clears the
+ * gate; sonnet and haiku are unaffected either way.
+ *
+ * The `<env>` block itself is kept. It carries the working directory,
+ * workspace root, git status, platform and date, which is the agent's only
+ * statement of where it is running. Dropping it leaves the model to infer its
+ * own working directory, and a proxied model has no other source for it.
  */
-const OPENCODE_ENV_BLOCK =
-  /\n?Here is some useful information about the environment you are running in:\n<env>[\s\S]*?<\/env>\n?/
+const OPENCODE_ENV_PREAMBLE =
+  /\n?Here is some useful information about the environment you are running in:\n(?=<env>)/
 
 const GENERIC_IDENTITY =
   "You are an expert coding assistant. You help users with software engineering tasks by reading files, executing commands, editing code, and writing new files.\n"
@@ -110,7 +117,7 @@ export function scrubOpencodeFingerprints(systemPrompt: string): string {
     .replace(OMO_IDENTITY_LINE, "")
     .replace(OMO_ENV_BLOCK, "")
     .replace(POWERED_BY_LINE, "")
-    .replace(OPENCODE_ENV_BLOCK, "\n")
+    .replace(OPENCODE_ENV_PREAMBLE, "\n")
     .replace(OPENCODE_BRAND_TOKEN, "the assistant")
     .replace(OMO_BRAND_TOKEN, "the assistant")
     .replace(/\n{3,}/g, "\n\n")
