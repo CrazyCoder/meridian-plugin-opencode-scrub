@@ -13,7 +13,7 @@ When Meridian routes OpenCode → Claude Max, those identity sections are:
 1. **Redundant** — Claude Code's preset already owns identity, tone, safety, and tool-use guidance.
 2. **A detection fingerprint** — they give Anthropic's detection a clear "this isn't Claude Code" signal that can trigger third-party extra-usage errors or rate-limit flags.
 
-This plugin surgically removes those lines and replaces the identity paragraph with a neutral, generic coding-assistant framing. Everything else in OpenCode's prompt (tone rules, task management, tool usage policy, code references, the env block, any user CLAUDE.md appended by OpenCode) is preserved verbatim.
+This plugin surgically removes those lines and replaces the identity paragraph with a neutral, generic coding-assistant framing. It removes the duplicate environment preamble and redundant fields while keeping a bare `<env>` block with the client `Working directory` line. Tone rules, task management, tool usage policy, code references, and user CLAUDE.md content remain intact.
 
 The scrub also handles [OhMyOpenCode](https://github.com/anomalyco/ohmyopencode)-style custom personas (Sisyphus et al.): the `You are "Sisyphus" ... from OhMyOpenCode.` identity line and the `<omo-env>...</omo-env>` block are stripped, while the persona's orchestration rules (Phase 0 intent gate, explore/librarian delegation, Oracle consultation, tone guidelines) are preserved.
 
@@ -68,6 +68,7 @@ Verify at `http://localhost:3456/plugins` — you should see `opencode-scrub` li
 | Vanilla OpenCode (`anthropic.txt`) | identity line swapped for generic, feedback block removed, docs paragraph removed, "OpenCode honestly applies" neutralized |
 | OhMyOpenCode/Sisyphus prompt | OMO identity line removed, `<omo-env>` block removed, "You are powered by..." line removed; persona rules preserved |
 | OpenCode prompt + user CLAUDE.md additions | identity stripped, all user content preserved |
+| OpenCode environment preamble + `<env>` | duplicate preamble and redundant fields removed; bare `Working directory` retained for Meridian's cwd extraction |
 
 The plugin is scoped to `adapters: ["opencode"]`, so it has no effect on requests from pi, Crush, Droid, ForgeCode, or the passthrough adapter.
 
@@ -83,6 +84,11 @@ The scrub applies 8 independent regex replacements, each idempotent and each a n
 6. **OMO env block** — `<omo-env>...</omo-env>`
 7. **Powered-by line** — `You are powered by the model named ...`
 8. **Residual brand tokens** — bare `OpenCode` → `the assistant`
+
+When `scrubOpencodeFingerprints` is called inside an OpenCode client hook, the
+bare working-directory line keeps the client's project path available to
+Meridian. Server-side use remains compatible: Meridian extracts the raw path
+before applying its plugin transform.
 
 ## Development
 

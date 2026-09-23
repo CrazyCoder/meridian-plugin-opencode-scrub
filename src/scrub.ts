@@ -20,11 +20,9 @@
  *     opencode's environment() builder appends (strongest third-party tell —
  *     Claude Code never emits this phrasing)
  *   - The duplicate "Here is some useful information about the environment
- *     you are running in:" preamble + <env> block. Claude Code's preset
- *     already injects this; opencode appending its own copy makes the
- *     preamble appear twice in the final system prompt, which Anthropic's
- *     billing layer treats as a third-party-impersonation signal and gates
- *     opus behind Extra Usage (sonnet/haiku unaffected).
+ *     you are running in:" preamble and redundant <env> fields. Keep a bare
+ *     Working directory line so client-side users do not erase the only path
+ *     Meridian can read before it chooses the SDK working directory.
  *
  * Preserved: all tool policy, tone rules, task management guidance, code
  * references section, Sisyphus orchestration rules (Phase 0, explore/
@@ -88,10 +86,17 @@ const POWERED_BY_LINE =
  * own copy on top of the preset, the preamble appears twice in the final
  * system prompt and Anthropic gates opus behind Extra Usage. Bisected
  * 2026-04-21: removing this block (or just the preamble line) makes opus
- * succeed; sonnet/haiku unaffected.
+ * succeed; sonnet/haiku unaffected. Retain only a bare cwd field without the
+ * duplicate preamble: Meridian reads this field from the incoming prompt when
+ * the scrub function is used client-side, before Meridian receives the body.
  */
 const OPENCODE_ENV_BLOCK =
   /\n?Here is some useful information about the environment you are running in:\n<env>[\s\S]*?<\/env>\n?/
+
+function keepClientCwd(block: string): string {
+  const cwd = block.match(/(?:^|\n)[ \t]*Working directory:[ \t]*([^\n<]+)/i)?.[1]?.trim()
+  return cwd ? `\n<env>\n  Working directory: ${cwd}\n</env>\n` : "\n"
+}
 
 const GENERIC_IDENTITY =
   "You are an expert coding assistant. You help users with software engineering tasks by reading files, executing commands, editing code, and writing new files.\n"
@@ -110,7 +115,7 @@ export function scrubOpencodeFingerprints(systemPrompt: string): string {
     .replace(OMO_IDENTITY_LINE, "")
     .replace(OMO_ENV_BLOCK, "")
     .replace(POWERED_BY_LINE, "")
-    .replace(OPENCODE_ENV_BLOCK, "\n")
+    .replace(OPENCODE_ENV_BLOCK, keepClientCwd)
     .replace(OPENCODE_BRAND_TOKEN, "the assistant")
     .replace(OMO_BRAND_TOKEN, "the assistant")
     .replace(/\n{3,}/g, "\n\n")
