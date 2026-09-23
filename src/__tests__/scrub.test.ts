@@ -94,19 +94,35 @@ Here is some useful information about the environment you are running in:
   Today's date: Thu Jul 10 2026
 </env>`
 
-  test("strips the env block and preamble when it ends the string (no trailing newline)", () => {
+  test("keeps only the client cwd when the duplicate env block ends the string", () => {
     const out = scrubOpencodeFingerprints(ENV_APPEND)
-    expect(out).not.toContain("<env>")
+    expect(out).toContain("<env>\n  Working directory: /tmp\n</env>")
     expect(out).not.toContain("useful information about the environment")
     expect(out).not.toContain("You are powered by the model named")
+    expect(out).not.toContain("Workspace root folder")
+    expect(out).not.toContain("Platform: darwin")
   })
 
-  test("strips the env block when content follows it (trailing newline present)", () => {
+  test("preserves the client cwd when content follows the duplicate env block", () => {
     const withTail = ENV_APPEND + "\n\nProject guidance: prefer TypeScript.\n"
     const out = scrubOpencodeFingerprints(withTail)
-    expect(out).not.toContain("<env>")
+    expect(out).toContain("<env>\n  Working directory: /tmp\n</env>")
     expect(out).not.toContain("useful information about the environment")
     expect(out).toContain("Project guidance: prefer TypeScript.")
+  })
+
+  test("removes the duplicate env entirely when it has no working directory", () => {
+    const withoutCwd = ENV_APPEND.replace("  Working directory: /tmp\n", "")
+    const out = scrubOpencodeFingerprints(withoutCwd)
+    expect(out).not.toContain("<env>")
+    expect(out).not.toContain("useful information about the environment")
+  })
+
+  test("preserves a Windows client path for Meridian's cwd extractor", () => {
+    const windows = ENV_APPEND.replace("/tmp", "C:\\Users\\Ada\\project")
+    const out = scrubOpencodeFingerprints(windows)
+    expect(out.match(/<env>\s*[\s\S]*?Working directory:\s*([^\n<]+)/i)?.[1]?.trim())
+      .toBe("C:\\Users\\Ada\\project")
   })
 
   test("is idempotent on the env append", () => {
