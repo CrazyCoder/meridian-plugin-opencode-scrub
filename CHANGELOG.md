@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.2](https://github.com/rynfar/meridian-plugin-opencode-scrub/compare/meridian-plugin-opencode-scrub-v0.2.1...meridian-plugin-opencode-scrub-v0.2.2) (2026-09-24)
+
+
+### Bug Fixes
+
+* scrub OpenCode prompts routed through LiteLLM ([#14](https://github.com/rynfar/meridian-plugin-opencode-scrub/issues/14)) ([c517a2c](https://github.com/rynfar/meridian-plugin-opencode-scrub/commit/c517a2c374e36cf859d8ec1398ce35b1cc0e9aa6))
+
 ## [0.2.1](https://github.com/rynfar/meridian-plugin-opencode-scrub/compare/meridian-plugin-opencode-scrub-v0.2.0...meridian-plugin-opencode-scrub-v0.2.1) (2026-09-23)
 
 
