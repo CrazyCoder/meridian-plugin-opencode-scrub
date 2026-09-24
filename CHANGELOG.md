@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.3](https://github.com/rynfar/meridian-plugin-opencode-scrub/compare/meridian-plugin-opencode-scrub-v0.2.2...meridian-plugin-opencode-scrub-v0.2.3) (2026-09-24)
+
+
+### Bug Fixes
+
+* report OpenCode scrub package version ([#16](https://github.com/rynfar/meridian-plugin-opencode-scrub/issues/16)) ([015d373](https://github.com/rynfar/meridian-plugin-opencode-scrub/commit/015d373d663ac4b1bc6ccc95f80bc5bfb265d2d1))
+
 ## [0.2.2](https://github.com/rynfar/meridian-plugin-opencode-scrub/compare/meridian-plugin-opencode-scrub-v0.2.1...meridian-plugin-opencode-scrub-v0.2.2) (2026-09-24)
 
 
